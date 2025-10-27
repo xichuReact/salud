@@ -1,0 +1,27 @@
+# Para Firebase (cuando se implemente)
+# google-services.json
+# GoogleService-Info.plist
+
+# Base de datos local
+*.isar
+*.isar.lock
+
+# Build
+build/
+.dart_tool/
+.packages
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Misc
+.DS_Store
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+pubspec.lock
