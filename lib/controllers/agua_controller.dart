@@ -27,10 +27,16 @@ final aguaConsumoSemanalProvider = FutureProvider<Map<int, int>>((ref) async {
   return await repository.getConsumoSemanal();
 });
 
+// Provider del objetivo diario personalizado
+final aguaObjetivoDiarioProvider = FutureProvider<int>((ref) async {
+  final repository = ref.watch(aguaRepositoryProvider);
+  return await repository.getObjetivoDiario();
+});
+
 // Provider de progreso (porcentaje del objetivo)
 final aguaProgresoProvider = FutureProvider<double>((ref) async {
   final total = await ref.watch(aguaTotalHoyProvider.future);
-  const objetivo = 2000; // ml por defecto
+  final objetivo = await ref.watch(aguaObjetivoDiarioProvider.future);
   return (total / objetivo).clamp(0.0, 1.0);
 });
 
@@ -61,6 +67,25 @@ class AguaController extends StateNotifier<AsyncValue<void>> {
       _ref.invalidate(aguaTotalHoyProvider);
       _ref.invalidate(aguaRegistrosHoyProvider);
       _ref.invalidate(aguaConsumoSemanalProvider);
+      _ref.invalidate(aguaProgresoProvider);
+    });
+  }
+
+  Future<void> actualizarObjetivo(int objetivoMl) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _repository.setObjetivoDiario(objetivoMl);
+      // Invalidar todos los providers que dependen del objetivo
+      _ref.invalidate(aguaObjetivoDiarioProvider);
+      _ref.invalidate(aguaProgresoProvider);
+    });
+  }
+
+  Future<void> resetearObjetivo() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _repository.resetObjetivoDiario();
+      _ref.invalidate(aguaObjetivoDiarioProvider);
       _ref.invalidate(aguaProgresoProvider);
     });
   }

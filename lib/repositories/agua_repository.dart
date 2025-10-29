@@ -1,9 +1,12 @@
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/registro_agua.dart';
 import '../services/isar_service.dart';
 
 class AguaRepository {
   final IsarService _isarService;
+  static const String _keyObjetivoDiario = 'agua_objetivo_diario_ml';
+  static const int _objetivoDefault = 2000; // 2L por defecto
 
   AguaRepository(this._isarService);
 
@@ -100,5 +103,26 @@ class AguaRepository {
         .fechaBetween(inicioDia, finDia)
         .sortByFechaDesc()
         .watch(fireImmediately: true);
+  }
+
+  /// Obtener objetivo diario de hidratación (en ml)
+  Future<int> getObjetivoDiario() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyObjetivoDiario) ?? _objetivoDefault;
+  }
+
+  /// Actualizar objetivo diario de hidratación (en ml)
+  Future<void> setObjetivoDiario(int objetivoMl) async {
+    if (objetivoMl < 500 || objetivoMl > 10000) {
+      throw ArgumentError('El objetivo debe estar entre 500ml y 10000ml');
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyObjetivoDiario, objetivoMl);
+  }
+
+  /// Resetear objetivo a valor por defecto
+  Future<void> resetObjetivoDiario() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyObjetivoDiario);
   }
 }

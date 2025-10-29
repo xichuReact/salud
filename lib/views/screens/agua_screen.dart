@@ -51,9 +51,14 @@ class AguaScreen extends ConsumerWidget {
     AsyncValue<int> totalAsync,
     AsyncValue<double> progresoAsync,
   ) {
+    final objetivoAsync = ref.watch(aguaObjetivoDiarioProvider);
+
     return totalAsync.when(
       data: (total) {
-        const objetivo = 2000;
+        final objetivo = objetivoAsync.maybeWhen(
+          data: (obj) => obj,
+          orElse: () => 2000,
+        );
         final progreso = progresoAsync.maybeWhen(
           data: (p) => p,
           orElse: () => 0.0,
@@ -451,31 +456,185 @@ class AguaScreen extends ConsumerWidget {
   }
 
   void _mostrarConfiguracion(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Configuración de hidratación'),
-        content: Column(
+    final objetivoAsync = ref.read(aguaObjetivoDiarioProvider);
+    
+    objetivoAsync.when(
+      data: (objetivoActual) {
+        showDialog(
+          context: context,
+          builder: (context) => _ConfiguracionObjetivoDialog(
+            objetivoActual: objetivoActual,
+          ),
+        );
+      },
+      loading: () {},
+      error: (_, __) {},
+    );
+  }
+}
+
+// Dialog de configuración de objetivo
+class _ConfiguracionObjetivoDialog extends ConsumerStatefulWidget {
+  final int objetivoActual;
+
+  const _ConfiguracionObjetivoDialog({
+    required this.objetivoActual,
+  });
+
+  @override
+  ConsumerState<_ConfiguracionObjetivoDialog> createState() =>
+      _ConfiguracionObjetivoDialogState();
+}
+
+class _ConfiguracionObjetivoDialogState
+    extends ConsumerState<_ConfiguracionObjetivoDialog> {
+  late double _objetivoMl;
+
+  @override
+  void initState() {
+    super.initState();
+    _objetivoMl = widget.objetivoActual.toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final objetivoLitros = (_objetivoMl / 1000).toStringAsFixed(1);
+
+    return AlertDialog(
+      title: const Text('Objetivo de Hidratación'),
+      content: SingleChildScrollView(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Objetivo diario: 2000 ml (2L)'),
-            const SizedBox(height: 8),
+            // Valor actual grande
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    '$objetivoLitros L',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text(
+                    '${_objetivoMl.toInt()} ml',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Slider
+            Slider(
+              value: _objetivoMl,
+              min: 500,
+              max: 5000,
+              divisions: 90, // Cada 50ml
+              label: '${_objetivoMl.toInt()} ml',
+              onChanged: (value) {
+                setState(() {
+                  _objetivoMl = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Botones predefinidos
             Text(
-              'Próximamente podrás personalizar tu objetivo',
+              'Objetivos comunes:',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildObjetivoChip('1.5 L', 1500),
+                _buildObjetivoChip('2 L', 2000),
+                _buildObjetivoChip('2.5 L', 2500),
+                _buildObjetivoChip('3 L', 3000),
+                _buildObjetivoChip('3.5 L', 3500),
+                _buildObjetivoChip('4 L', 4000),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Recomendación general: 2-3 litros al día',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final controller = ref.read(aguaControllerProvider.notifier);
+            await controller.actualizarObjetivo(_objetivoMl.toInt());
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Objetivo actualizado a ${objetivoLitros}L'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+          child: const Text('Guardar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildObjetivoChip(String label, int ml) {
+    final isSelected = (_objetivoMl - ml).abs() < 50;
+
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _objetivoMl = ml.toDouble();
+        });
+      },
     );
   }
 }

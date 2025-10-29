@@ -1165,6 +1165,8 @@ class DashboardScreen extends ConsumerWidget {
     AsyncValue<double> progreso,
     AsyncValue<Map<int, int>> semanal,
   ) {
+    final objetivoAsync = ref.watch(aguaObjetivoDiarioProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1210,7 +1212,10 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   totalHoy.when(
                     data: (ml) {
-                      const objetivo = 2000;
+                      final objetivo = objetivoAsync.maybeWhen(
+                        data: (obj) => obj,
+                        orElse: () => 2000,
+                      );
                       final progresoVal = progreso.maybeWhen(
                         data: (p) => p,
                         orElse: () => 0.0,
