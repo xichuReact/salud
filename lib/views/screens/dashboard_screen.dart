@@ -1197,13 +1197,20 @@ class DashboardScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.blue.shade50,
-                Colors.cyan.shade50,
+                Colors.blue.shade800,
+                Colors.cyan.shade700,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -1228,7 +1235,7 @@ class DashboardScreen extends ConsumerWidget {
                               children: [
                                 Icon(
                                   Icons.water_drop,
-                                  color: Colors.blue.shade700,
+                                  color: Colors.white,
                                   size: 28,
                                 ),
                                 const SizedBox(width: 8),
@@ -1239,6 +1246,7 @@ class DashboardScreen extends ConsumerWidget {
                                       .titleMedium
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                 ),
                               ],
@@ -1251,14 +1259,14 @@ class DashboardScreen extends ConsumerWidget {
                                   .headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
+                                    color: Colors.white,
                                   ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'de $objetivo ml',
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -1269,9 +1277,9 @@ class DashboardScreen extends ConsumerWidget {
                               child: LinearProgressIndicator(
                                 value: progresoVal,
                                 minHeight: 12,
-                                backgroundColor: Colors.blue.shade100,
+                                backgroundColor: Colors.white.withValues(alpha: 0.2),
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.blue.shade700,
+                                  Colors.white,
                                 ),
                               ),
                             ),
@@ -1279,7 +1287,7 @@ class DashboardScreen extends ConsumerWidget {
                             Text(
                               '${(progresoVal * 100).toInt()}% completado',
                               style: TextStyle(
-                                color: Colors.blue.shade700,
+                                color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1298,17 +1306,18 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              const Divider(),
+              Divider(color: Colors.white.withValues(alpha: 0.3)),
               const SizedBox(height: 16),
               // Gráfico semanal
               Row(
                 children: [
-                  Icon(Icons.bar_chart, color: Colors.blue.shade700),
+                  Icon(Icons.bar_chart, color: Colors.white),
                   const SizedBox(width: 8),
                   Text(
                     'Últimos 7 días',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                   ),
                 ],
@@ -1336,7 +1345,7 @@ class DashboardScreen extends ConsumerWidget {
                                     dias[idx],
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: Colors.white.withValues(alpha: 0.7),
                                     ),
                                   );
                                 }
@@ -1363,7 +1372,7 @@ class DashboardScreen extends ConsumerWidget {
                             barRods: [
                               BarChartRodData(
                                 toY: ml.toDouble(),
-                                color: Colors.blue.shade400,
+                                color: Colors.white.withValues(alpha: 0.9),
                                 width: 16,
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(4),
