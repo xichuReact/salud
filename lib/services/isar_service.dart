@@ -9,6 +9,7 @@ import '../models/plan_semanal.dart';
 import '../models/recordatorio.dart';
 import '../models/pasos_registro.dart';
 import '../models/alimento.dart';
+import '../models/registro_agua.dart';
 
 class IsarService {
   static final IsarService _instance = IsarService._internal();
@@ -34,6 +35,7 @@ class IsarService {
         PasosRegistroSchema,
         RegistroAlimentoSchema,
         AlimentoBaseSchema,
+        RegistroAguaSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode, // Habilitar inspector en modo debug

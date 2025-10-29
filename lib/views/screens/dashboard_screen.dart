@@ -6,12 +6,14 @@ import '../../controllers/ejercicio_controller.dart';
 import '../../controllers/caminata_controller.dart';
 import '../../controllers/pasos_controller.dart';
 import '../../controllers/alimento_controller.dart';
+import '../../controllers/agua_controller.dart';
 import '../../models/ejercicio.dart';
 import '../../config/theme.dart';
 import 'package:intl/intl.dart';
 import 'perfil_screen.dart';
 import 'recordatorios_screen.dart';
 import 'pasos_screen.dart';
+import 'agua_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -29,6 +31,10 @@ class DashboardScreen extends ConsumerWidget {
     final caloriasSemanales = ref.watch(caloriasSemanalesProvider);
     final ultimosAlimentos = ref.watch(ultimosAlimentosProvider);
     final pasosEstadisticas = ref.watch(pasosEstadisticasProvider);
+    // Hidratación
+    final aguaTotalHoy = ref.watch(aguaTotalHoyProvider);
+    final aguaProgreso = ref.watch(aguaProgresoProvider);
+    final aguaSemanal = ref.watch(aguaConsumoSemanalProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -105,6 +111,16 @@ class DashboardScreen extends ConsumerWidget {
             _buildNutritionWeeklyChart(context, caloriasSemanales),
             const SizedBox(height: 16),
             _buildUltimosAlimentos(context, ultimosAlimentos),
+            const SizedBox(height: 24),
+
+            // Hidratación
+            _buildHidratacionSection(
+              context,
+              ref,
+              aguaTotalHoy,
+              aguaProgreso,
+              aguaSemanal,
+            ),
             const SizedBox(height: 24),
 
             // Ejercicios de hoy
@@ -1140,5 +1156,234 @@ class DashboardScreen extends ConsumerWidget {
     if (avg >= 4.0) return 'Con fuerza';
     if (avg >= 2.0) return 'Poca fuerza';
     return 'Sin fuerza';
+  }
+
+  Widget _buildHidratacionSection(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<int> totalHoy,
+    AsyncValue<double> progreso,
+    AsyncValue<Map<int, int>> semanal,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Hidratación',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AguaScreen()),
+                );
+              },
+              child: const Text('Ver todo'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Card con progreso y estadísticas
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.blue.shade50,
+                Colors.cyan.shade50,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // Progreso de hoy
+              Row(
+                children: [
+                  totalHoy.when(
+                    data: (ml) {
+                      const objetivo = 2000;
+                      final progresoVal = progreso.maybeWhen(
+                        data: (p) => p,
+                        orElse: () => 0.0,
+                      );
+                      return Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.water_drop,
+                                  color: Colors.blue.shade700,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Hoy',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '$ml ml',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'de $objetivo ml',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Barra de progreso
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: LinearProgressIndicator(
+                                value: progresoVal,
+                                minHeight: 12,
+                                backgroundColor: Colors.blue.shade100,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue.shade700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${(progresoVal * 100).toInt()}% completado',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    loading: () => const Expanded(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (_, __) => const Expanded(
+                      child: Text('Error al cargar datos'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Gráfico semanal
+              Row(
+                children: [
+                  Icon(Icons.bar_chart, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Últimos 7 días',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              semanal.when(
+                data: (data) {
+                  return SizedBox(
+                    height: 120,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 3000,
+                        barTouchData: BarTouchData(enabled: false),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                const dias = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+                                final idx = value.toInt();
+                                if (idx >= 0 && idx < dias.length) {
+                                  return Text(
+                                    dias[idx],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        gridData: FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(7, (i) {
+                          final ml = data[i] ?? 0;
+                          return BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: ml.toDouble(),
+                                color: Colors.blue.shade400,
+                                width: 16,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(4),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const SizedBox(
+                  height: 120,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, __) => const SizedBox(
+                  height: 120,
+                  child: Center(child: Text('Error')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
