@@ -11,6 +11,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Enable core library desugaring for flutter_local_notifications
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -28,6 +30,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Google Sign-In Web Client ID (used by the Android plugin when requesting ID tokens)
+        // This was generated in Google Cloud Console for project "salud-476417"
+        resValue("string", "default_web_client_id", "1087754675093-8ap718dk66rso6ctnbq4i1k4jmjp03ig.apps.googleusercontent.com")
     }
 
     buildTypes {
@@ -41,4 +47,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Core library desugaring for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

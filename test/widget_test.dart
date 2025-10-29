@@ -1,30 +1,71 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:salud_flutter/main.dart';
+import 'package:salud_flutter/controllers/caminata_controller.dart';
+import 'package:salud_flutter/controllers/ejercicio_controller.dart';
+import 'package:salud_flutter/controllers/pasos_controller.dart';
+import 'package:salud_flutter/controllers/registro_controller.dart';
+import 'package:salud_flutter/models/ejercicio.dart';
+import 'package:salud_flutter/models/registro_ejercicio.dart';
+import 'package:salud_flutter/views/screens/dashboard_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Dashboard smoke test renders key sections', (tester) async {
+    final fakePasosStats = PasosEstadisticas(
+      ultimos7Dias: List.generate(
+        7,
+        (index) => PasosDia(
+          fecha: DateTime.now().subtract(Duration(days: 6 - index)),
+          pasos: 3000 + index * 250,
+        ),
+      ),
+      promedioUltimos7: 3250,
+      pasosHoy: 4100,
+      promedioHistorico: 3100,
+      promedioMesActual: 3300,
+      promedioMesAnterior: 3000,
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final overrides = <Override>[
+      registrosHoyProvider
+          .overrideWith((ref) => Stream.value(<RegistroEjercicio>[])),
+      registrosSemanalesProvider.overrideWith((ref) async => {
+            for (var i = 0; i < 7; i++) i: i,
+          }),
+      ejerciciosProvider.overrideWith((ref) => Stream.value(<Ejercicio>[])),
+      sensacionUltimos7Provider.overrideWith((ref) async => {
+            'counts': {1: 0, 3: 0, 5: 0},
+            'average': 0.0,
+            'total': 0,
+          }),
+      sensacionHoyProvider.overrideWith((ref) async => {
+            'counts': {1: 0, 3: 0, 5: 0},
+            'average': 0.0,
+            'total': 0,
+          }),
+      estadisticasCaminatasProvider.overrideWith((ref) async => {
+            'total': 0,
+            'duracionTotal': 0,
+          }),
+      pasosEstadisticasProvider
+          .overrideWith((ref) => AsyncValue.data(fakePasosStats)),
+    ];
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: const MaterialApp(
+          home: DashboardScreen(),
+        ),
+      ),
+    );
+
+    // Permite que los Future/StreamProviders entreguen datos.
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Progreso Semanal'), findsOneWidget);
+    expect(find.text('Pasos'), findsWidgets);
   });
 }

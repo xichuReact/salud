@@ -16,7 +16,8 @@ final caminatasProvider = StreamProvider<List<Caminata>>((ref) {
 });
 
 // Provider de estadísticas
-final estadisticasCaminatasProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final estadisticasCaminatasProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
   final repository = ref.watch(caminataRepositoryProvider);
   return await repository.getEstadisticas();
 });
@@ -41,13 +42,15 @@ class CaminataController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  Future<List<Caminata>> obtenerCaminatasPorFecha(DateTime start, DateTime end) async {
+  Future<List<Caminata>> obtenerCaminatasPorFecha(
+      DateTime start, DateTime end) async {
     return await _repository.getByDateRange(start, end);
   }
 }
 
 // Provider del controller
-final caminataControllerProvider = StateNotifierProvider<CaminataController, AsyncValue<void>>((ref) {
+final caminataControllerProvider =
+    StateNotifierProvider<CaminataController, AsyncValue<void>>((ref) {
   final repository = ref.watch(caminataRepositoryProvider);
   return CaminataController(repository);
 });

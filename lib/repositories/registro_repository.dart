@@ -63,7 +63,7 @@ class RegistroRepository {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day);
     final end = start.add(const Duration(days: 1));
-    
+
     return _isarService.db.registroEjercicios
         .filter()
         .fechaBetween(start, end)
@@ -73,7 +73,7 @@ class RegistroRepository {
   /// Obtener estadísticas de un ejercicio
   Future<Map<String, dynamic>> getEstadisticas(int ejercicioId) async {
     final registros = await getByEjercicio(ejercicioId);
-    
+
     if (registros.isEmpty) {
       return {'total': 0, 'promedio': 0.0, 'maximo': 0.0};
     }

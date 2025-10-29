@@ -10,10 +10,7 @@ class CaminataRepository {
 
   /// Obtener todas las caminatas
   Future<List<Caminata>> getAll() async {
-    return await _isarService.db.caminatas
-        .where()
-        .sortByFechaDesc()
-        .findAll();
+    return await _isarService.db.caminatas.where().sortByFechaDesc().findAll();
   }
 
   /// Obtener caminatas por rango de fechas
@@ -55,7 +52,7 @@ class CaminataRepository {
   /// Obtener estadísticas de caminatas
   Future<Map<String, dynamic>> getEstadisticas() async {
     final caminatas = await getAll();
-    
+
     if (caminatas.isEmpty) {
       return {
         'total': 0,
@@ -82,7 +79,8 @@ class CaminataRepository {
       'duracionTotal': duracionTotal,
       'distanciaTotal': distanciaTotal,
       'promedioDuracion': duracionTotal ~/ caminatas.length,
-      'promedioDistancia': countDistancia > 0 ? distanciaTotal / countDistancia : 0.0,
+      'promedioDistancia':
+          countDistancia > 0 ? distanciaTotal / countDistancia : 0.0,
     };
   }
 }

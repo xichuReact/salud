@@ -19,25 +19,25 @@ void main() async {
   final pink = img.ColorRgba8(255, 105, 180, 255); // gradient top
 
   // Center of heart: exactly in the middle
-  final heartCenterX = size * 0.50;
-  final heartCenterY = size * 0.50;
-  final heartSize = size * heartScale;
+  const heartCenterX = size * 0.50;
+  const heartCenterY = size * 0.50;
+  const heartSize = size * heartScale;
 
   for (int py = 0; py < size; py++) {
     for (int px = 0; px < size; px++) {
       // Translate to heart-local coordinates
       final dx = px - heartCenterX;
       final dy = py - heartCenterY;
-      
+
       // Normalize to [-1.2, 1.2] range for the heart equation
       final xn = dx / (heartSize * 0.5);
       final yn = -dy / (heartSize * 0.5); // invert Y to keep heart upright
-      
+
       final x2 = xn * xn;
       final y2 = yn * yn;
       final expr = (x2 + y2 - 1);
       final value = expr * expr * expr - x2 * yn * yn * yn;
-      
+
       if (value <= 0) {
         // Gradient from pink at top to red at bottom
         final t = (yn + 1.2) / 2.4; // 0..1 from top to bottom

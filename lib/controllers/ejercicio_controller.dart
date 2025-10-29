@@ -21,7 +21,8 @@ final ejerciciosProvider = StreamProvider<List<Ejercicio>>((ref) {
 });
 
 // Provider para ejercicios por tipo
-final ejerciciosPorTipoProvider = FutureProvider.family<List<Ejercicio>, String>((ref, tipo) async {
+final ejerciciosPorTipoProvider =
+    FutureProvider.family<List<Ejercicio>, String>((ref, tipo) async {
   final repository = ref.watch(ejercicioRepositoryProvider);
   return await repository.getByTipo(tipo);
 });
@@ -55,7 +56,8 @@ class EjercicioController extends StateNotifier<AsyncValue<void>> {
 }
 
 // Provider del controller
-final ejercicioControllerProvider = StateNotifierProvider<EjercicioController, AsyncValue<void>>((ref) {
+final ejercicioControllerProvider =
+    StateNotifierProvider<EjercicioController, AsyncValue<void>>((ref) {
   final repository = ref.watch(ejercicioRepositoryProvider);
   return EjercicioController(repository);
 });

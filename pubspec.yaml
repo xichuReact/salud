@@ -33,6 +33,15 @@ dependencies:
   # Utilidades
   intl: ^0.19.0
   uuid: ^4.4.0
+  
+  # Google Drive backup
+  googleapis: ^13.2.0
+  google_sign_in: ^6.2.1
+  http: ^1.2.0
+  
+  # Notificaciones locales
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:

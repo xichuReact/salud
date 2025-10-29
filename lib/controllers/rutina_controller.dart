@@ -16,7 +16,8 @@ final rutinasProvider = StreamProvider<List<Rutina>>((ref) {
 });
 
 // Provider de rutinas por día
-final rutinasPorDiaProvider = FutureProvider.family<List<Rutina>, int>((ref, dia) async {
+final rutinasPorDiaProvider =
+    FutureProvider.family<List<Rutina>, int>((ref, dia) async {
   final repository = ref.watch(rutinaRepositoryProvider);
   return await repository.getByDia(dia);
 });
@@ -50,7 +51,8 @@ class RutinaController extends StateNotifier<AsyncValue<void>> {
 }
 
 // Provider del controller
-final rutinaControllerProvider = StateNotifierProvider<RutinaController, AsyncValue<void>>((ref) {
+final rutinaControllerProvider =
+    StateNotifierProvider<RutinaController, AsyncValue<void>>((ref) {
   final repository = ref.watch(rutinaRepositoryProvider);
   return RutinaController(repository);
 });

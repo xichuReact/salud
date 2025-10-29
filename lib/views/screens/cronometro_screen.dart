@@ -5,11 +5,44 @@ import '../../controllers/caminata_controller.dart';
 import '../../models/caminata.dart';
 import '../../config/theme.dart';
 
-class CronometroScreen extends ConsumerWidget {
+class CronometroScreen extends ConsumerStatefulWidget {
   const CronometroScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CronometroScreen> createState() => _CronometroScreenState();
+}
+
+class _CronometroScreenState extends ConsumerState<CronometroScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = ref.read(cronometroControllerProvider.notifier);
+    if (state == AppLifecycleState.resumed) {
+      controller.sincronizar();
+      controller.reanudarSiCorriendo();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      controller.manejarPausaSistema();
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cronometro = ref.watch(cronometroControllerProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 360;
@@ -229,9 +262,11 @@ class CronometroScreen extends ConsumerWidget {
     final controller = ref.read(cronometroControllerProvider.notifier);
     final duracion = controller.obtenerTiempoFinal();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => _DialogoGuardarCaminata(duracionSegundos: duracion),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _GuardarCaminataSheet(duracionSegundos: duracion),
     );
   }
 
@@ -245,81 +280,341 @@ class CronometroScreen extends ConsumerWidget {
   }
 }
 
-class _DialogoGuardarCaminata extends ConsumerStatefulWidget {
+class _GuardarCaminataSheet extends ConsumerStatefulWidget {
+  const _GuardarCaminataSheet({required this.duracionSegundos});
+
   final int duracionSegundos;
 
-  const _DialogoGuardarCaminata({required this.duracionSegundos});
-
   @override
-  ConsumerState<_DialogoGuardarCaminata> createState() =>
-      _DialogoGuardarCaminataState();
+  ConsumerState<_GuardarCaminataSheet> createState() =>
+      _GuardarCaminataSheetState();
 }
 
-class _DialogoGuardarCaminataState extends ConsumerState<_DialogoGuardarCaminata> {
+class _GuardarCaminataSheetState extends ConsumerState<_GuardarCaminataSheet> {
   final _ubicacionController = TextEditingController();
   final _notasController = TextEditingController();
 
+  String _formatearDuracion(int totalSegundos) {
+    final duration = Duration(seconds: totalSegundos);
+    final horas = duration.inHours;
+    final minutos = duration.inMinutes.remainder(60);
+    final segundos = duration.inSeconds.remainder(60);
+
+    if (horas > 0) {
+      if (minutos == 0) return '${horas}h';
+      return '${horas}h ${minutos}m';
+    }
+    if (minutos > 0) {
+      if (segundos == 0) return '${minutos}m';
+      return '${minutos}m ${segundos}s';
+    }
+    return '${segundos}s';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final minutos = widget.duracionSegundos ~/ 60;
+    final duracionFormateada = _formatearDuracion(widget.duracionSegundos);
 
-    return AlertDialog(
-      title: const Text('Guardar Caminata'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.timer),
-              title: const Text('Duración'),
-              trailing: Text(
-                '$minutos minutos',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+    final media = MediaQuery.of(context);
+
+    return SafeArea(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        child: FractionallySizedBox(
+          widthFactor: 1,
+          heightFactor: 0.75,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            TextField(
-              controller: _ubicacionController,
-              decoration: const InputDecoration(
-                labelText: 'Ubicación (opcional)',
-                prefixIcon: Icon(Icons.location_on),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(
+                                Icons.directions_walk,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Guardar caminata',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Añade detalles para entender mejor tu progreso',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(color: Colors.grey.shade600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                AppTheme.secondaryColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.secondaryColor
+                                      .withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.timer,
+                                  color: AppTheme.secondaryColor,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Duración',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    duracionFormateada,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _ubicacionController,
+                          decoration: InputDecoration(
+                            labelText: 'Ubicación (opcional)',
+                            prefixIcon: Container(
+                              margin: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: AppTheme.primaryColor,
+                                size: 20,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: AppTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _notasController,
+                          decoration: InputDecoration(
+                            labelText: 'Notas (opcional)',
+                            alignLabelWithHint: true,
+                            prefixIcon: Container(
+                              margin: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentColor
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.note_alt,
+                                color: AppTheme.accentColor,
+                                size: 20,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: AppTheme.accentColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: FilledButton(
+                      onPressed: () async {
+                        final caminata = Caminata()
+                          ..fecha = DateTime.now()
+                          ..duracionSegundos = widget.duracionSegundos
+                          ..ubicacion = _ubicacionController.text.isNotEmpty
+                              ? _ubicacionController.text
+                              : null
+                          ..notas = _notasController.text.isNotEmpty
+                              ? _notasController.text
+                              : null;
+
+                        final navigator = Navigator.of(context);
+                        final messenger = ScaffoldMessenger.of(context);
+
+                        await ref
+                            .read(caminataControllerProvider.notifier)
+                            .guardarCaminata(caminata);
+
+                        if (!mounted) return;
+
+                        if (navigator.canPop()) {
+                          navigator.pop();
+                        }
+
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 12),
+                                Text('Caminata guardada'),
+                              ],
+                            ),
+                            backgroundColor: AppTheme.primaryColor,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Guardar caminata',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _notasController,
-              decoration: const InputDecoration(
-                labelText: 'Notas (opcional)',
-                prefixIcon: Icon(Icons.note),
-              ),
-              maxLines: 2,
-            ),
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final caminata = Caminata()
-              ..fecha = DateTime.now()
-              ..duracionSegundos = widget.duracionSegundos
-              ..ubicacion = _ubicacionController.text.isNotEmpty
-                  ? _ubicacionController.text
-                  : null
-              ..notas = _notasController.text.isNotEmpty ? _notasController.text : null;
-
-            ref.read(caminataControllerProvider.notifier).guardarCaminata(caminata);
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Caminata guardada')),
-            );
-          },
-          child: const Text('Guardar'),
-        ),
-      ],
     );
   }
 
@@ -382,13 +677,15 @@ class _HistorialCaminatas extends ConsumerWidget {
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: AppTheme.accentColor.withOpacity(0.1),
+                              backgroundColor:
+                                  AppTheme.accentColor.withOpacity(0.1),
                               child: const Icon(Icons.directions_walk,
                                   color: AppTheme.accentColor),
                             ),
                             title: Text(
                               caminata.ubicacion ?? 'Caminata',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             subtitle: Text('$minutos minutos'),
                             trailing: Row(
@@ -400,8 +697,10 @@ class _HistorialCaminatas extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                  onPressed: () => _confirmarEliminarCaminata(context, ref, caminata),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red, size: 20),
+                                  onPressed: () => _confirmarEliminarCaminata(
+                                      context, ref, caminata),
                                 ),
                               ],
                             ),
@@ -418,12 +717,14 @@ class _HistorialCaminatas extends ConsumerWidget {
     );
   }
 
-  void _confirmarEliminarCaminata(BuildContext context, WidgetRef ref, caminata) {
+  void _confirmarEliminarCaminata(
+      BuildContext context, WidgetRef ref, caminata) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar caminata'),
-        content: Text('¿Seguro que deseas eliminar esta caminata de ${caminata.duracionSegundos ~/ 60} minutos?'),
+        content: Text(
+            '¿Seguro que deseas eliminar esta caminata de ${caminata.duracionSegundos ~/ 60} minutos?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -431,7 +732,9 @@ class _HistorialCaminatas extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              ref.read(caminataControllerProvider.notifier).eliminarCaminata(caminata.id);
+              ref
+                  .read(caminataControllerProvider.notifier)
+                  .eliminarCaminata(caminata.id);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Caminata eliminada')),

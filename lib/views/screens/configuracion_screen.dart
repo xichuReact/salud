@@ -198,40 +198,41 @@ class ConfiguracionScreen extends ConsumerWidget {
     );
   }
 
-    void _confirmarLimpiarDatos(BuildContext parentContext, WidgetRef ref) {
-      showDialog(
-        context: parentContext,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Eliminar todos los datos'),
-          content: const Text(
-            'Esto borrará ejercicios, rutinas, registros y caminatas guardadas. ¿Deseas continuar?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(parentContext);
-                Navigator.pop(dialogContext);
-                try {
-                  await ref.read(isarServiceProvider).clearDatabase();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Datos eliminados correctamente')),
-                  );
-                } catch (e) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
-                  );
-                }
-              },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-            ),
-          ],
+  void _confirmarLimpiarDatos(BuildContext parentContext, WidgetRef ref) {
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar todos los datos'),
+        content: const Text(
+          'Esto borrará ejercicios, rutinas, registros y caminatas guardadas. ¿Deseas continuar?',
         ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(parentContext);
+              Navigator.pop(dialogContext);
+              try {
+                await ref.read(isarServiceProvider).clearDatabase();
+                messenger.showSnackBar(
+                  const SnackBar(
+                      content: Text('Datos eliminados correctamente')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Error al eliminar: $e')),
+                );
+              }
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _FormularioEjercicio extends ConsumerStatefulWidget {
@@ -386,7 +387,7 @@ class _FormularioEjercicioState extends ConsumerState<_FormularioEjercicio> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _guardar,
+                  onPressed: () => _guardar(),
                   child: Text(widget.ejercicio == null ? 'Crear' : 'Guardar'),
                 ),
               ),
@@ -397,19 +398,43 @@ class _FormularioEjercicioState extends ConsumerState<_FormularioEjercicio> {
     );
   }
 
-  void _guardar() {
+  Future<void> _guardar() async {
     if (_formKey.currentState?.validate() ?? false) {
       final ejercicio = widget.ejercicio ?? Ejercicio();
-      ejercicio.nombre = _nombreController.text;
-      ejercicio.descripcion = _descripcionController.text;
+      // Normalizar y asignar campos
+      ejercicio.nombre = _nombreController.text.trim();
+      final descripcion = _descripcionController.text.trim();
+      ejercicio.descripcion = descripcion.isEmpty ? null : descripcion;
       ejercicio.tipo = _tipoSeleccionado;
-      ejercicio.gruposMusculares = _gruposSeleccionados;
+      // Asignar una copia para evitar referencias compartidas inesperadas
+      ejercicio.gruposMusculares = List.of(_gruposSeleccionados);
       ejercicio.unidadMedida = 'repeticiones';
 
-      ref
-          .read(ejercicioControllerProvider.notifier)
-          .actualizarEjercicio(ejercicio);
-      Navigator.pop(context);
+      final controller = ref.read(ejercicioControllerProvider.notifier);
+      final isNuevo = widget.ejercicio == null;
+      final messenger = ScaffoldMessenger.of(context);
+
+      try {
+        if (isNuevo) {
+          await controller.crearEjercicio(ejercicio);
+        } else {
+          await controller.actualizarEjercicio(ejercicio);
+        }
+
+        if (!mounted) return;
+        Navigator.pop(context, true);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              isNuevo ? 'Ejercicio creado' : 'Ejercicio actualizado',
+            ),
+          ),
+        );
+      } catch (e) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error al guardar: $e')),
+        );
+      }
     }
   }
 

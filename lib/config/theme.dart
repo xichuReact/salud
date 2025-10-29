@@ -8,7 +8,7 @@ class AppTheme {
   static const Color accentColor = Color(0xFF10B981); // Verde éxito
   static const Color warningColor = Color(0xFFF59E0B); // Amarillo
   static const Color errorColor = Color(0xFFEF4444); // Rojo
-  
+
   // Colores para tipos de ejercicio
   static const Color fuerzaColor = Color(0xFFEF4444);
   static const Color cardioColor = Color(0xFF3B82F6);

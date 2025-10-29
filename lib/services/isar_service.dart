@@ -6,6 +6,9 @@ import '../models/registro_ejercicio.dart';
 import '../models/rutina.dart';
 import '../models/caminata.dart';
 import '../models/plan_semanal.dart';
+import '../models/recordatorio.dart';
+import '../models/pasos_registro.dart';
+import '../models/alimento.dart';
 
 class IsarService {
   static final IsarService _instance = IsarService._internal();
@@ -19,7 +22,7 @@ class IsarService {
     if (_isar != null && _isar!.isOpen) return;
 
     final dir = await getApplicationDocumentsDirectory();
-    
+
     _isar = await Isar.open(
       [
         EjercicioSchema,
@@ -27,6 +30,10 @@ class IsarService {
         RutinaSchema,
         CaminataSchema,
         PlanSemanalSchema,
+        RecordatorioSchema,
+        PasosRegistroSchema,
+        RegistroAlimentoSchema,
+        AlimentoBaseSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode, // Habilitar inspector en modo debug
@@ -34,9 +41,12 @@ class IsarService {
   }
 
   /// Obtiene la instancia de Isar (debe estar inicializada)
+  Isar? get isar => _isar;
+
   Isar get db {
     if (_isar == null || !_isar!.isOpen) {
-      throw Exception('Isar no está inicializada. Llama a initialize() primero.');
+      throw Exception(
+          'Isar no está inicializada. Llama a initialize() primero.');
     }
     return _isar!;
   }

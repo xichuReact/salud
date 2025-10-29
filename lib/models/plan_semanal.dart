@@ -25,13 +25,13 @@ class PlanSemanal {
 @embedded
 class DiaPlanificado {
   late DateTime fecha;
-  
+
   // IDs de rutinas planificadas para este día
   List<int> rutinaIds = [];
-  
+
   // Completado
   bool completado = false;
-  
+
   // Notas del día
   String? notas;
 }
